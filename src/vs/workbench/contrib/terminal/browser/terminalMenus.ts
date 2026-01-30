@@ -475,6 +475,19 @@ export function setupTerminalMenus(): void {
 				id: MenuId.ViewTitle,
 				item: {
 					command: {
+						id: TerminalCommandId.SplitDown,
+						title: localize('workbench.action.terminal.splitDown', "Split Down"),
+						icon: Codicon.splitVertical
+					},
+					group: 'navigation',
+					order: 2.5,
+					when: TerminalContextKeys.shouldShowViewInlineActions
+				}
+			},
+			{
+				id: MenuId.ViewTitle,
+				item: {
+					command: {
 						id: TerminalCommandId.Kill,
 						title: terminalStrings.kill,
 						icon: Codicon.trash

@@ -1205,8 +1205,12 @@ export class TerminalService extends Disposable implements ITerminalService {
 	}
 
 	private _getSplitDirection(location?: ITerminalLocationOptions): SplitDirection | undefined {
-		if (location && typeof location === 'object' && hasKey(location, { splitDirection: true })) {
-			return location.splitDirection;
+		// Check if location is an object with splitDirection property
+		if (location && typeof location === 'object') {
+			const loc = location as Record<string, unknown>;
+			if (Object.prototype.hasOwnProperty.call(loc, 'splitDirection') && typeof loc.splitDirection === 'string') {
+				return loc.splitDirection as SplitDirection;
+			}
 		}
 		return undefined;
 	}
