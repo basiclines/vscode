@@ -302,6 +302,16 @@ export const enum Direction {
 	Down = 3
 }
 
+/**
+ * The direction to split a terminal pane.
+ */
+export const enum SplitDirection {
+	/** Split to the right of the reference terminal (horizontal layout) */
+	Right = 'right',
+	/** Split below the reference terminal (vertical layout) */
+	Down = 'down'
+}
+
 export interface IQuickPickTerminalObject {
 	config: IRegisterContributedProfileArgs | ITerminalProfile | { profile: IExtensionTerminalProfile; options: { icon?: string; color?: string } } | undefined;
 	keyMods: IKeyMods | undefined;
@@ -344,14 +354,15 @@ export interface ITerminalGroup {
 	resizePanes(relativeSizes: number[]): void;
 	setActiveInstanceByIndex(index: number, force?: boolean): void;
 	attachToElement(element: HTMLElement): void;
-	addInstance(instance: ITerminalInstance): void;
+	addInstance(instance: ITerminalInstance, parentTerminalId?: number, splitDirection?: SplitDirection): void;
 	removeInstance(instance: ITerminalInstance): void;
 	moveInstance(instances: SingleOrMany<ITerminalInstance>, index: number, position: 'before' | 'after'): void;
 	setVisible(visible: boolean): void;
 	layout(width: number, height: number): void;
 	addDisposable(disposable: IDisposable): void;
-	split(shellLaunchConfig: IShellLaunchConfig): ITerminalInstance;
+	split(shellLaunchConfig: IShellLaunchConfig, splitDirection?: SplitDirection): ITerminalInstance;
 	getLayoutInfo(isActive: boolean): ITerminalTabLayoutInfoById;
+	equalizePanes(): void;
 }
 
 export const enum TerminalConnectionState {
@@ -654,7 +665,7 @@ export interface ISerializedTerminalEditorInput extends ITerminalEditorInputObje
 export interface IDeserializedTerminalEditorInput extends ITerminalEditorInputObject {
 }
 
-export type ITerminalLocationOptions = TerminalLocation | TerminalEditorLocation | { parentTerminal: MaybePromise<ITerminalInstance> } | { splitActiveTerminal: boolean };
+export type ITerminalLocationOptions = TerminalLocation | TerminalEditorLocation | { parentTerminal: MaybePromise<ITerminalInstance>; splitDirection?: SplitDirection } | { splitActiveTerminal: boolean; splitDirection?: SplitDirection };
 
 export interface ICreateTerminalOptions {
 	/**

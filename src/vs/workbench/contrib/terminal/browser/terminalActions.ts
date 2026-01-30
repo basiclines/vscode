@@ -55,7 +55,7 @@ import { accessibleViewCurrentProviderId, accessibleViewIsShown, accessibleViewO
 import { IRemoteTerminalAttachTarget, ITerminalProfileResolverService, ITerminalProfileService, TERMINAL_VIEW_ID, TerminalCommandId } from '../common/terminal.js';
 import { TerminalContextKeys } from '../common/terminalContextKey.js';
 import { terminalStrings } from '../common/terminalStrings.js';
-import { Direction, ICreateTerminalOptions, IDetachedTerminalInstance, ITerminalConfigurationService, ITerminalEditorService, ITerminalEditingService, ITerminalGroupService, ITerminalInstance, ITerminalInstanceService, ITerminalService, IXtermTerminal } from './terminal.js';
+import { Direction, ICreateTerminalOptions, IDetachedTerminalInstance, ITerminalConfigurationService, ITerminalEditorService, ITerminalEditingService, ITerminalGroupService, ITerminalInstance, ITerminalInstanceService, ITerminalService, IXtermTerminal, SplitDirection } from './terminal.js';
 import { isAuxiliaryWindow } from '../../../../base/browser/window.js';
 import { InstanceContext } from './terminalContextMenu.js';
 import { getColorClass, getIconId, getUriClasses } from './terminalIcon.js';
@@ -492,6 +492,13 @@ export function registerTerminalActions() {
 		},
 		precondition: sharedWhenClause.terminalAvailable,
 		run: (c) => c.groupService.activeGroup?.resizePane(Direction.Down)
+	});
+
+	registerTerminalAction({
+		id: TerminalCommandId.EqualizePane,
+		title: localize2('workbench.action.terminal.equalizePane', 'Equalize Terminal Pane Sizes'),
+		precondition: sharedWhenClause.terminalAvailable,
+		run: (c) => c.groupService.activeGroup?.equalizePanes()
 	});
 
 	registerTerminalAction({
@@ -1107,6 +1114,57 @@ export function registerTerminalActions() {
 				}
 				await Promise.all(promises);
 			}
+		}
+	});
+
+	registerTerminalAction({
+		id: TerminalCommandId.SplitDown,
+		title: localize2('workbench.action.terminal.splitDown', 'Split Terminal Down'),
+		precondition: ContextKeyExpr.or(TerminalContextKeys.processSupported, TerminalContextKeys.webExtensionContributedProfile),
+		keybinding: {
+			primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.Backslash),
+			weight: KeybindingWeight.WorkbenchContrib,
+			when: TerminalContextKeys.focus
+		},
+		icon: Codicon.splitVertical,
+		run: async (c, accessor, args) => {
+			const optionsOrProfile = isObject(args) ? args as ICreateTerminalOptions | ITerminalProfile : undefined;
+			const commandService = accessor.get(ICommandService);
+			const workspaceContextService = accessor.get(IWorkspaceContextService);
+			const options = convertOptionsOrProfileToOptions(optionsOrProfile);
+			const activeInstance = (await c.service.getInstanceHost(options?.location)).activeInstance;
+			if (!activeInstance) {
+				return;
+			}
+			const cwd = await getCwdForSplit(activeInstance, workspaceContextService.getWorkspace().folders, commandService, c.configService);
+			if (cwd === undefined) {
+				return;
+			}
+			const instance = await c.service.createTerminal({ location: { parentTerminal: activeInstance, splitDirection: SplitDirection.Down }, config: options?.config, cwd });
+			await focusActiveTerminal(instance, c);
+		}
+	});
+
+	registerTerminalAction({
+		id: TerminalCommandId.SplitRight,
+		title: localize2('workbench.action.terminal.splitRight', 'Split Terminal Right'),
+		precondition: ContextKeyExpr.or(TerminalContextKeys.processSupported, TerminalContextKeys.webExtensionContributedProfile),
+		icon: Codicon.splitHorizontal,
+		run: async (c, accessor, args) => {
+			const optionsOrProfile = isObject(args) ? args as ICreateTerminalOptions | ITerminalProfile : undefined;
+			const commandService = accessor.get(ICommandService);
+			const workspaceContextService = accessor.get(IWorkspaceContextService);
+			const options = convertOptionsOrProfileToOptions(optionsOrProfile);
+			const activeInstance = (await c.service.getInstanceHost(options?.location)).activeInstance;
+			if (!activeInstance) {
+				return;
+			}
+			const cwd = await getCwdForSplit(activeInstance, workspaceContextService.getWorkspace().folders, commandService, c.configService);
+			if (cwd === undefined) {
+				return;
+			}
+			const instance = await c.service.createTerminal({ location: { parentTerminal: activeInstance, splitDirection: SplitDirection.Right }, config: options?.config, cwd });
+			await focusActiveTerminal(instance, c);
 		}
 	});
 

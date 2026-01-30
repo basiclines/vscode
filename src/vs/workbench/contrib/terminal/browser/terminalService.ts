@@ -29,7 +29,7 @@ import { IThemeService, Themable } from '../../../../platform/theme/common/theme
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { VirtualWorkspaceContext } from '../../../common/contextkeys.js';
-import { ICreateTerminalOptions, IDetachedTerminalInstance, IDetachedXTermOptions, IRequestAddInstanceToGroupEvent, ITerminalConfigurationService, ITerminalEditorService, ITerminalGroup, ITerminalGroupService, ITerminalInstance, ITerminalInstanceHost, ITerminalInstanceService, ITerminalLocationOptions, ITerminalService, ITerminalServiceNativeDelegate, TerminalConnectionState, TerminalEditorLocation } from './terminal.js';
+import { ICreateTerminalOptions, IDetachedTerminalInstance, IDetachedXTermOptions, IRequestAddInstanceToGroupEvent, ITerminalConfigurationService, ITerminalEditorService, ITerminalGroup, ITerminalGroupService, ITerminalInstance, ITerminalInstanceHost, ITerminalInstanceService, ITerminalLocationOptions, ITerminalService, ITerminalServiceNativeDelegate, SplitDirection, TerminalConnectionState, TerminalEditorLocation } from './terminal.js';
 import { getCwdForSplit } from './terminalActions.js';
 import { TerminalEditorInput } from './terminalEditorInput.js';
 import { getColorStyleContent, getUriClasses } from './terminalIcon.js';
@@ -1066,11 +1066,12 @@ export class TerminalService extends Disposable implements ITerminalService {
 		}
 
 		const parent = await this._getSplitParent(options?.location);
+		const splitDirection = this._getSplitDirection(options?.location);
 		this._terminalHasBeenCreated.set(true);
 		this._extensionService.activateByEvent('onTerminal:*');
 		let instance;
 		if (parent) {
-			instance = this._splitTerminal(shellLaunchConfig, location, parent);
+			instance = this._splitTerminal(shellLaunchConfig, location, parent, splitDirection);
 		} else {
 			instance = this._createTerminal(shellLaunchConfig, location, options);
 		}
@@ -1139,7 +1140,7 @@ export class TerminalService extends Disposable implements ITerminalService {
 		}
 	}
 
-	private _splitTerminal(shellLaunchConfig: IShellLaunchConfig, location: TerminalLocation, parent: ITerminalInstance): ITerminalInstance {
+	private _splitTerminal(shellLaunchConfig: IShellLaunchConfig, location: TerminalLocation, parent: ITerminalInstance, splitDirection?: SplitDirection): ITerminalInstance {
 		let instance;
 		// Use the URI from the base instance if it exists, this will correctly split local terminals
 		if (typeof shellLaunchConfig.cwd !== 'object' && typeof parent.shellLaunchConfig.cwd === 'object') {
@@ -1157,7 +1158,7 @@ export class TerminalService extends Disposable implements ITerminalService {
 				throw new Error(`Cannot split a terminal without a group (instanceId: ${parent.instanceId}, title: ${parent.title})`);
 			}
 			shellLaunchConfig.parentTerminalId = parent.instanceId;
-			instance = group.split(shellLaunchConfig);
+			instance = group.split(shellLaunchConfig, splitDirection);
 		}
 		return instance;
 	}
@@ -1199,6 +1200,13 @@ export class TerminalService extends Disposable implements ITerminalService {
 			return location.parentTerminal;
 		} else if (location && typeof location === 'object' && hasKey(location, { splitActiveTerminal: true })) {
 			return this.activeInstance;
+		}
+		return undefined;
+	}
+
+	private _getSplitDirection(location?: ITerminalLocationOptions): SplitDirection | undefined {
+		if (location && typeof location === 'object' && hasKey(location, { splitDirection: true })) {
+			return location.splitDirection;
 		}
 		return undefined;
 	}

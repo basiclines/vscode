@@ -5,11 +5,12 @@
 
 import { TERMINAL_VIEW_ID } from '../common/terminal.js';
 import { Event, Emitter } from '../../../../base/common/event.js';
-import { IDisposable, Disposable, DisposableStore, dispose, toDisposable } from '../../../../base/common/lifecycle.js';
-import { SplitView, Orientation, IView, Sizing } from '../../../../base/browser/ui/splitview/splitview.js';
+import { IDisposable, Disposable, dispose, toDisposable } from '../../../../base/common/lifecycle.js';
+import { Orientation } from '../../../../base/browser/ui/splitview/splitview.js';
+import { Grid, IView as IGridView, Direction as GridDirection, Sizing as GridSizing } from '../../../../base/browser/ui/grid/grid.js';
 import { isHorizontal, IWorkbenchLayoutService, Position } from '../../../services/layout/browser/layoutService.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
-import { ITerminalInstance, Direction, ITerminalGroup, ITerminalInstanceService, ITerminalConfigurationService } from './terminal.js';
+import { ITerminalInstance, Direction, ITerminalGroup, ITerminalInstanceService, ITerminalConfigurationService, SplitDirection } from './terminal.js';
 import { ViewContainerLocation, IViewDescriptorService } from '../../../common/views.js';
 import { IShellLaunchConfig, ITerminalTabLayoutInfoById, TerminalLocation } from '../../../../platform/terminal/common/terminal.js';
 import { TerminalStatus } from './terminalStatusList.js';
@@ -30,213 +31,322 @@ const enum Constants {
 	ResizePartCellCount = 4
 }
 
-class SplitPaneContainer extends Disposable {
-	private _height: number;
-	private _width: number;
-	private _splitView!: SplitView;
-	private readonly _splitViewDisposables = this._register(new DisposableStore());
-	private _children: SplitPane[] = [];
-	private _terminalToPane: Map<ITerminalInstance, SplitPane> = new Map();
-
-	private _onDidChange: Event<number | undefined> = Event.None;
-	get onDidChange(): Event<number | undefined> { return this._onDidChange; }
-
-	constructor(
-		private _container: HTMLElement,
-		public orientation: Orientation,
-	) {
-		super();
-		this._width = this._container.offsetWidth;
-		this._height = this._container.offsetHeight;
-		this._createSplitView();
-		this._splitView.layout(this.orientation === Orientation.HORIZONTAL ? this._width : this._height);
-	}
-
-	private _createSplitView(): void {
-		this._splitViewDisposables.clear();
-		this._splitView = new SplitView(this._container, { orientation: this.orientation });
-		this._splitViewDisposables.add(this._splitView);
-		this._splitViewDisposables.add(this._splitView.onDidSashReset(() => this._splitView.distributeViewSizes()));
-	}
-
-	split(instance: ITerminalInstance, index: number): void {
-		this._addChild(instance, index);
-	}
-
-	resizePane(index: number, direction: Direction, amount: number): void {
-		// Only resize when there is more than one pane
-		if (this._children.length <= 1) {
-			return;
-		}
-
-		// Get sizes
-		const sizes: number[] = [];
-		for (let i = 0; i < this._splitView.length; i++) {
-			sizes.push(this._splitView.getViewSize(i));
-		}
-
-		// Remove size from right pane, unless index is the last pane in which case use left pane
-		const isSizingEndPane = index !== this._children.length - 1;
-		const indexToChange = isSizingEndPane ? index + 1 : index - 1;
-		if (isSizingEndPane && direction === Direction.Left) {
-			amount *= -1;
-		} else if (!isSizingEndPane && direction === Direction.Right) {
-			amount *= -1;
-		} else if (isSizingEndPane && direction === Direction.Up) {
-			amount *= -1;
-		} else if (!isSizingEndPane && direction === Direction.Down) {
-			amount *= -1;
-		}
-
-		// Ensure the size is not reduced beyond the minimum, otherwise weird things can happen
-		if (sizes[index] + amount < Constants.SplitPaneMinSize) {
-			amount = Constants.SplitPaneMinSize - sizes[index];
-		} else if (sizes[indexToChange] - amount < Constants.SplitPaneMinSize) {
-			amount = sizes[indexToChange] - Constants.SplitPaneMinSize;
-		}
-
-		// Apply the size change
-		sizes[index] += amount;
-		sizes[indexToChange] -= amount;
-		for (let i = 0; i < this._splitView.length - 1; i++) {
-			this._splitView.resizeView(i, sizes[i]);
-		}
-	}
-
-	resizePanes(relativeSizes: number[]): void {
-		if (this._children.length <= 1) {
-			return;
-		}
-
-		// assign any extra size to last terminal
-		relativeSizes[relativeSizes.length - 1] += 1 - relativeSizes.reduce((totalValue, currentValue) => totalValue + currentValue, 0);
-		let totalSize = 0;
-		for (let i = 0; i < this._splitView.length; i++) {
-			totalSize += this._splitView.getViewSize(i);
-		}
-		for (let i = 0; i < this._splitView.length; i++) {
-			this._splitView.resizeView(i, totalSize * relativeSizes[i]);
-		}
-	}
-
-	getPaneSize(instance: ITerminalInstance): number {
-		const paneForInstance = this._terminalToPane.get(instance);
-		if (!paneForInstance) {
-			return 0;
-		}
-
-		const index = this._children.indexOf(paneForInstance);
-		return this._splitView.getViewSize(index);
-	}
-
-	private _addChild(instance: ITerminalInstance, index: number): void {
-		const child = new SplitPane(instance, this.orientation === Orientation.HORIZONTAL ? this._height : this._width);
-		child.orientation = this.orientation;
-		if (isNumber(index)) {
-			this._children.splice(index, 0, child);
-		} else {
-			this._children.push(child);
-		}
-		this._terminalToPane.set(instance, this._children[this._children.indexOf(child)]);
-
-		this._withDisabledLayout(() => this._splitView.addView(child, Sizing.Distribute, index));
-		this.layout(this._width, this._height);
-
-		this._onDidChange = Event.any(...this._children.map(c => c.onDidChange));
-	}
-
-	remove(instance: ITerminalInstance): void {
-		let index: number | null = null;
-		for (let i = 0; i < this._children.length; i++) {
-			if (this._children[i].instance === instance) {
-				index = i;
-			}
-		}
-		if (index !== null) {
-			this._children.splice(index, 1);
-			this._terminalToPane.delete(instance);
-			this._splitView.removeView(index, Sizing.Distribute);
-			instance.detachFromElement();
-		}
-	}
-
-	layout(width: number, height: number): void {
-		this._width = width;
-		this._height = height;
-		if (this.orientation === Orientation.HORIZONTAL) {
-			this._children.forEach(c => c.orthogonalLayout(height));
-			this._splitView.layout(width);
-		} else {
-			this._children.forEach(c => c.orthogonalLayout(width));
-			this._splitView.layout(height);
-		}
-	}
-
-	setOrientation(orientation: Orientation): void {
-		if (this.orientation === orientation) {
-			return;
-		}
-		this.orientation = orientation;
-
-		// Remove old split view
-		while (this._container.children.length > 0) {
-			this._container.children[0].remove();
-		}
-
-		// Create new split view with updated orientation
-		this._createSplitView();
-		this._withDisabledLayout(() => {
-			this._children.forEach(child => {
-				child.orientation = orientation;
-				this._splitView.addView(child, 1);
-			});
-		});
-	}
-
-	private _withDisabledLayout(innerFunction: () => void): void {
-		// Whenever manipulating views that are going to be changed immediately, disabling
-		// layout/resize events in the terminal prevent bad dimensions going to the pty.
-		this._children.forEach(c => c.instance.disableLayout = true);
-		innerFunction();
-		this._children.forEach(c => c.instance.disableLayout = false);
+/**
+ * Converts a terminal SplitDirection to Grid Direction.
+ */
+function splitDirectionToGridDirection(splitDirection: SplitDirection): GridDirection {
+	switch (splitDirection) {
+		case SplitDirection.Right:
+			return GridDirection.Right;
+		case SplitDirection.Down:
+			return GridDirection.Down;
 	}
 }
 
-class SplitPane implements IView {
-	minimumSize: number = Constants.SplitPaneMinSize;
-	maximumSize: number = Number.MAX_VALUE;
-
-	orientation: Orientation | undefined;
-
-	private _onDidChange: Event<number | undefined> = Event.None;
-	get onDidChange(): Event<number | undefined> { return this._onDidChange; }
-
+/**
+ * A terminal pane that can be used within a Grid layout.
+ * Implements IGridView to be compatible with the Grid component.
+ */
+class TerminalSplitPane implements IGridView {
 	readonly element: HTMLElement;
 
-	constructor(
-		readonly instance: ITerminalInstance,
-		public orthogonalSize: number
-	) {
+	private _minimumWidth: number = Constants.SplitPaneMinSize;
+	private _minimumHeight: number = Constants.SplitPaneMinSize;
+	private _maximumWidth: number = Number.MAX_VALUE;
+	private _maximumHeight: number = Number.MAX_VALUE;
+
+	get minimumWidth(): number { return this._minimumWidth; }
+	get minimumHeight(): number { return this._minimumHeight; }
+	get maximumWidth(): number { return this._maximumWidth; }
+	get maximumHeight(): number { return this._maximumHeight; }
+
+	private readonly _onDidChange = new Emitter<{ width: number; height: number } | undefined>();
+	readonly onDidChange: Event<{ width: number; height: number } | undefined> = this._onDidChange.event;
+
+	constructor(readonly instance: ITerminalInstance) {
 		this.element = document.createElement('div');
 		this.element.className = 'terminal-split-pane';
 		this.instance.attachToElement(this.element);
 	}
 
-	layout(size: number): void {
-		// Only layout when both sizes are known
-		if (!size || !this.orthogonalSize) {
+	layout(width: number, height: number): void {
+		if (!width || !height) {
+			return;
+		}
+		this.instance.layout({ width, height });
+	}
+
+	dispose(): void {
+		this._onDidChange.dispose();
+	}
+}
+
+/**
+ * A container that manages terminal instances in a grid layout,
+ * allowing splits in both horizontal and vertical directions.
+ */
+class TerminalGridContainer extends Disposable {
+	private _grid: Grid<TerminalSplitPane> | undefined;
+	private _terminalToPane: Map<ITerminalInstance, TerminalSplitPane> = new Map();
+	private _width: number = 0;
+	private _height: number = 0;
+
+	private readonly _onDidChange = this._register(new Emitter<void>());
+	readonly onDidChange: Event<void> = this._onDidChange.event;
+
+	constructor(
+		private readonly _container: HTMLElement,
+		private _orientation: Orientation
+	) {
+		super();
+		this._width = this._container.offsetWidth;
+		this._height = this._container.offsetHeight;
+	}
+
+	get orientation(): Orientation {
+		return this._orientation;
+	}
+
+	/**
+	 * Adds a terminal instance to the grid.
+	 * @param instance The terminal instance to add
+	 * @param referenceInstance Optional reference instance to split from
+	 * @param splitDirection The direction to split (defaults to panel-based orientation)
+	 */
+	split(instance: ITerminalInstance, referenceInstance?: ITerminalInstance, splitDirection?: SplitDirection): void {
+		const pane = new TerminalSplitPane(instance);
+		this._terminalToPane.set(instance, pane);
+
+		if (!this._grid) {
+			// First terminal - create the grid with this pane
+			this._grid = new Grid(pane);
+			this._container.appendChild(this._grid.element);
+			this._register(this._grid);
+		} else {
+			// Find the reference pane to split from
+			const referencePane = referenceInstance
+				? this._terminalToPane.get(referenceInstance)
+				: this._getLastPane();
+
+			if (referencePane) {
+				// Determine direction: use explicit direction or default based on orientation
+				const direction = splitDirection
+					? splitDirectionToGridDirection(splitDirection)
+					: (this._orientation === Orientation.HORIZONTAL ? GridDirection.Right : GridDirection.Down);
+
+				this._grid.addView(pane, GridSizing.Distribute, referencePane, direction);
+			}
+		}
+
+		this._layout();
+		this._onDidChange.fire();
+	}
+
+	/**
+	 * Removes a terminal instance from the grid.
+	 */
+	remove(instance: ITerminalInstance): void {
+		const pane = this._terminalToPane.get(instance);
+		if (!pane || !this._grid) {
 			return;
 		}
 
-		if (this.orientation === Orientation.VERTICAL) {
-			this.instance.layout({ width: this.orthogonalSize, height: size });
+		// Grid doesn't allow removing the last view, so we need to check
+		if (this._terminalToPane.size > 1) {
+			this._grid.removeView(pane, GridSizing.Distribute);
+		}
+
+		instance.detachFromElement();
+		this._terminalToPane.delete(instance);
+		pane.dispose();
+
+		this._onDidChange.fire();
+	}
+
+	/**
+	 * Gets the size of a terminal's pane.
+	 */
+	getPaneSize(instance: ITerminalInstance): number {
+		const pane = this._terminalToPane.get(instance);
+		if (!pane || !this._grid) {
+			return 0;
+		}
+		const size = this._grid.getViewSize(pane);
+		// Return the primary dimension based on current orientation
+		return this._orientation === Orientation.HORIZONTAL ? size.width : size.height;
+	}
+
+	/**
+	 * Resizes a pane in the given direction.
+	 */
+	resizePane(instance: ITerminalInstance, direction: Direction, amount: number): void {
+		const pane = this._terminalToPane.get(instance);
+		if (!pane || !this._grid) {
+			return;
+		}
+
+		const currentSize = this._grid.getViewSize(pane);
+		const isHorizontalResize = direction === Direction.Left || direction === Direction.Right;
+
+		// Determine if we should grow or shrink
+		const shouldShrink = direction === Direction.Left || direction === Direction.Up;
+		const delta = shouldShrink ? -amount : amount;
+
+		if (isHorizontalResize) {
+			this._grid.resizeView(pane, {
+				width: Math.max(Constants.SplitPaneMinSize, currentSize.width + delta),
+				height: currentSize.height
+			});
 		} else {
-			this.instance.layout({ width: size, height: this.orthogonalSize });
+			this._grid.resizeView(pane, {
+				width: currentSize.width,
+				height: Math.max(Constants.SplitPaneMinSize, currentSize.height + delta)
+			});
 		}
 	}
 
-	orthogonalLayout(size: number): void {
-		this.orthogonalSize = size;
+	/**
+	 * Resizes all panes to match the given relative sizes.
+	 * Note: This is a simplified implementation for backward compatibility.
+	 */
+	resizePanes(relativeSizes: number[]): void {
+		if (!this._grid || this._terminalToPane.size <= 1) {
+			return;
+		}
+
+		// Get total available size
+		const totalSize = this._orientation === Orientation.HORIZONTAL ? this._width : this._height;
+
+		// Apply sizes to panes in order
+		const panes = Array.from(this._terminalToPane.values());
+		for (let i = 0; i < panes.length && i < relativeSizes.length; i++) {
+			const pane = panes[i];
+			const size = totalSize * relativeSizes[i];
+			const currentSize = this._grid.getViewSize(pane);
+
+			if (this._orientation === Orientation.HORIZONTAL) {
+				this._grid.resizeView(pane, { width: size, height: currentSize.height });
+			} else {
+				this._grid.resizeView(pane, { width: currentSize.width, height: size });
+			}
+		}
+	}
+
+	/**
+	 * Updates the layout dimensions.
+	 */
+	layout(width: number, height: number): void {
+		this._width = width;
+		this._height = height;
+		this._layout();
+	}
+
+	private _layout(): void {
+		if (this._grid && this._width && this._height) {
+			this._grid.layout(this._width, this._height);
+		}
+	}
+
+	/**
+	 * Changes the default orientation for new splits.
+	 * Note: This doesn't re-layout existing terminals, just affects new splits.
+	 */
+	setOrientation(orientation: Orientation): void {
+		this._orientation = orientation;
+		// The grid maintains its structure - we just change the default for new splits
+	}
+
+	private _getLastPane(): TerminalSplitPane | undefined {
+		const panes = Array.from(this._terminalToPane.values());
+		return panes.length > 0 ? panes[panes.length - 1] : undefined;
+	}
+
+	/**
+	 * Gets a pane by terminal instance.
+	 */
+	getPane(instance: ITerminalInstance): TerminalSplitPane | undefined {
+		return this._terminalToPane.get(instance);
+	}
+
+	/**
+	 * Distributes all pane sizes evenly.
+	 */
+	equalizePanes(): void {
+		if (this._grid) {
+			this._grid.distributeViewSizes();
+		}
+	}
+}
+
+// Keep the old SplitPaneContainer for reference during migration
+class SplitPaneContainer extends Disposable {
+	private readonly _gridContainer: TerminalGridContainer;
+	private _children: ITerminalInstance[] = [];
+
+	private _onDidChange: Event<number | undefined> = Event.None;
+	get onDidChange(): Event<number | undefined> { return this._onDidChange; }
+
+	get orientation(): Orientation {
+		return this._gridContainer.orientation;
+	}
+
+	constructor(
+		_container: HTMLElement,
+		orientation: Orientation,
+	) {
+		super();
+		this._gridContainer = this._register(new TerminalGridContainer(_container, orientation));
+	}
+
+	split(instance: ITerminalInstance, index: number, splitDirection?: SplitDirection): void {
+		// Find the reference instance (the one before the new index)
+		const referenceInstance = index > 0 && this._children.length > 0
+			? this._children[Math.min(index - 1, this._children.length - 1)]
+			: undefined;
+
+		this._gridContainer.split(instance, referenceInstance, splitDirection);
+
+		// Track in children array at the right position
+		if (index >= this._children.length) {
+			this._children.push(instance);
+		} else {
+			this._children.splice(index, 0, instance);
+		}
+	}
+
+	resizePane(index: number, direction: Direction, amount: number): void {
+		const instance = this._children[index];
+		if (instance) {
+			this._gridContainer.resizePane(instance, direction, amount);
+		}
+	}
+
+	resizePanes(relativeSizes: number[]): void {
+		this._gridContainer.resizePanes(relativeSizes);
+	}
+
+	getPaneSize(instance: ITerminalInstance): number {
+		return this._gridContainer.getPaneSize(instance);
+	}
+
+	remove(instance: ITerminalInstance): void {
+		const index = this._children.indexOf(instance);
+		if (index !== -1) {
+			this._children.splice(index, 1);
+		}
+		this._gridContainer.remove(instance);
+	}
+
+	layout(width: number, height: number): void {
+		this._gridContainer.layout(width, height);
+	}
+
+	setOrientation(orientation: Orientation): void {
+		this._gridContainer.setOrientation(orientation);
+	}
+
+	equalizePanes(): void {
+		this._gridContainer.equalizePanes();
 	}
 }
 
@@ -298,7 +408,7 @@ export class TerminalGroup extends Disposable implements ITerminalGroup {
 		}));
 	}
 
-	addInstance(shellLaunchConfigOrInstance: IShellLaunchConfig | ITerminalInstance, parentTerminalId?: number): void {
+	addInstance(shellLaunchConfigOrInstance: IShellLaunchConfig | ITerminalInstance, parentTerminalId?: number, splitDirection?: SplitDirection): void {
 		let instance: ITerminalInstance;
 		// if a parent terminal is provided, find it
 		// otherwise, parent is the active terminal
@@ -317,7 +427,7 @@ export class TerminalGroup extends Disposable implements ITerminalGroup {
 		this._initInstanceListeners(instance);
 
 		if (this._splitPaneContainer) {
-			this._splitPaneContainer.split(instance, parentIndex + 1);
+			this._splitPaneContainer.split(instance, parentIndex + 1, splitDirection);
 		}
 
 		this._onInstancesChanged.fire();
@@ -522,9 +632,9 @@ export class TerminalGroup extends Disposable implements ITerminalGroup {
 		this.terminalInstances.forEach(i => i.setVisible(visible));
 	}
 
-	split(shellLaunchConfig: IShellLaunchConfig): ITerminalInstance {
+	split(shellLaunchConfig: IShellLaunchConfig, splitDirection?: SplitDirection): ITerminalInstance {
 		const instance = this._terminalInstanceService.createInstance(shellLaunchConfig, TerminalLocation.Panel);
-		this.addInstance(instance, shellLaunchConfig.parentTerminalId);
+		this.addInstance(instance, shellLaunchConfig.parentTerminalId, splitDirection);
 		this._setActiveInstance(instance);
 		return instance;
 	}
@@ -627,5 +737,9 @@ export class TerminalGroup extends Disposable implements ITerminalGroup {
 		}
 
 		this._splitPaneContainer.resizePanes(relativeSizes);
+	}
+
+	equalizePanes(): void {
+		this._splitPaneContainer?.equalizePanes();
 	}
 }

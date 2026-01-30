@@ -12,7 +12,7 @@ import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextke
 import { IExtensionTerminalProfile, ITerminalProfile, TerminalLocation, TerminalSettingId } from '../../../../platform/terminal/common/terminal.js';
 import { ResourceContextKey } from '../../../common/contextkeys.js';
 import { TaskExecutionSupportedContext } from '../../tasks/common/taskService.js';
-import { ICreateTerminalOptions, ITerminalLocationOptions, ITerminalService } from './terminal.js';
+import { ICreateTerminalOptions, ITerminalLocationOptions, ITerminalService, SplitDirection } from './terminal.js';
 import { TerminalCommandId, TERMINAL_VIEW_ID } from '../common/terminal.js';
 import { TerminalContextKeys, TerminalContextKeyStrings } from '../common/terminalContextKey.js';
 import { terminalStrings } from '../common/terminalStrings.js';
@@ -39,6 +39,32 @@ export const enum TerminalMenuBarGroup {
 }
 
 export function setupTerminalMenus(): void {
+	// Register the split submenu items
+	MenuRegistry.appendMenuItems([
+		{
+			id: MenuId.TerminalSplitContextMenu,
+			item: {
+				command: {
+					id: TerminalCommandId.SplitRight,
+					title: localize('workbench.action.terminal.splitRight', "Split Right")
+				},
+				group: '1_split',
+				order: 1
+			}
+		},
+		{
+			id: MenuId.TerminalSplitContextMenu,
+			item: {
+				command: {
+					id: TerminalCommandId.SplitDown,
+					title: localize('workbench.action.terminal.splitDown', "Split Down")
+				},
+				group: '1_split',
+				order: 2
+			}
+		}
+	]);
+
 	MenuRegistry.appendMenuItems(
 		[
 			{
@@ -69,13 +95,10 @@ export function setupTerminalMenus(): void {
 				id: MenuId.MenubarTerminalMenu,
 				item: {
 					group: TerminalMenuBarGroup.Create,
-					command: {
-						id: TerminalCommandId.Split,
-						title: localize({ key: 'miSplitTerminal', comment: ['&& denotes a mnemonic'] }, "&&Split Terminal"),
-						precondition: ContextKeyExpr.has(TerminalContextKeyStrings.IsOpen)
-					},
-					order: 2,
-					when: TerminalContextKeys.processSupported
+					submenu: MenuId.TerminalSplitContextMenu,
+					title: localize({ key: 'miSplitTerminal', comment: ['&& denotes a mnemonic'] }, "&&Split Terminal"),
+					order: 3,
+					when: ContextKeyExpr.and(TerminalContextKeys.processSupported, ContextKeyExpr.has(TerminalContextKeyStrings.IsOpen))
 				}
 			},
 			{
@@ -211,10 +234,9 @@ export function setupTerminalMenus(): void {
 				id: MenuId.TerminalEditorInstanceContext,
 				item: {
 					group: TerminalContextMenuGroup.Create,
-					command: {
-						id: TerminalCommandId.Split,
-						title: terminalStrings.split.value
-					}
+					submenu: MenuId.TerminalSplitContextMenu,
+					title: terminalStrings.split.value,
+					order: 1
 				}
 			},
 			{
@@ -224,7 +246,8 @@ export function setupTerminalMenus(): void {
 						id: TerminalCommandId.New,
 						title: terminalStrings.new
 					},
-					group: TerminalContextMenuGroup.Create
+					group: TerminalContextMenuGroup.Create,
+					order: 2
 				}
 			},
 			{
@@ -558,10 +581,8 @@ export function setupTerminalMenus(): void {
 			{
 				id: MenuId.TerminalTabContext,
 				item: {
-					command: {
-						id: TerminalCommandId.SplitActiveTab,
-						title: terminalStrings.split.value,
-					},
+					submenu: MenuId.TerminalSplitContextMenu,
+					title: terminalStrings.split.value,
 					group: TerminalContextMenuGroup.Create,
 					order: 1
 				}
@@ -802,9 +823,23 @@ export function getTerminalActionBarArgs(location: ITerminalLocationOptions, pro
 			auxiliary: { compact: true },
 		}
 	}))));
-	dropdownActions.push(disposableStore.add(new Action(TerminalCommandId.Split, terminalStrings.split.value, undefined, true, () => terminalService.createAndFocusTerminal({
-		location: splitLocation
+
+	// Split submenu with direction options
+	const splitSubmenuActions: IAction[] = [];
+	const splitRightLocation = typeof splitLocation === 'object' && hasKey(splitLocation, { splitActiveTerminal: true })
+		? { splitActiveTerminal: true, splitDirection: SplitDirection.Right }
+		: { viewColumn: SIDE_GROUP };
+	const splitDownLocation = typeof splitLocation === 'object' && hasKey(splitLocation, { splitActiveTerminal: true })
+		? { splitActiveTerminal: true, splitDirection: SplitDirection.Down }
+		: { viewColumn: SIDE_GROUP };
+
+	splitSubmenuActions.push(disposableStore.add(new Action(TerminalCommandId.SplitRight, localize('splitRight', "Split Right"), undefined, true, () => terminalService.createAndFocusTerminal({
+		location: splitRightLocation
 	}))));
+	splitSubmenuActions.push(disposableStore.add(new Action(TerminalCommandId.SplitDown, localize('splitDown', "Split Down"), undefined, true, () => terminalService.createAndFocusTerminal({
+		location: splitDownLocation
+	}))));
+	dropdownActions.push(new SubmenuAction('split.direction', terminalStrings.split.value, splitSubmenuActions));
 	dropdownActions.push(new Separator());
 
 	profiles = profiles.filter(e => !e.isAutoDetected);
