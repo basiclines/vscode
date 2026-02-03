@@ -1840,8 +1840,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.workbenchGrid.setViewVisible(this.editorPartView, !hidden);
 
 		// The editor and panel cannot be hidden at the same time
-		// unless we have a maximized auxiliary bar
-		if (hidden && !this.isVisible(Parts.PANEL_PART) && !this.isAuxiliaryBarMaximized()) {
+		// unless we have a maximized auxiliary bar OR the auxiliary bar is visible
+		if (hidden && !this.isVisible(Parts.PANEL_PART) && !this.isAuxiliaryBarMaximized() && !this.isVisible(Parts.AUXILIARYBAR_PART)) {
 			this.setPanelHidden(false, true);
 		}
 	}

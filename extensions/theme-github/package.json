@@ -1,0 +1,28 @@
+{
+  "name": "theme-github",
+  "displayName": "GitHub Theme",
+  "description": "GitHub Dark Dimmed theme for VS Code",
+  "categories": [
+    "Themes"
+  ],
+  "version": "1.0.0",
+  "publisher": "vscode",
+  "license": "MIT",
+  "engines": {
+    "vscode": "*"
+  },
+  "contributes": {
+    "themes": [
+      {
+        "id": "GitHub Dark Dimmed",
+        "label": "GitHub Dark Dimmed",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark-dimmed.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/microsoft/vscode.git"
+  }
+}

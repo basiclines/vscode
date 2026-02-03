@@ -426,11 +426,6 @@ export function setupTerminalMenus(): void {
 						id: TerminalCommandId.Focus,
 						title: terminalStrings.focus
 					},
-					alt: {
-						id: TerminalCommandId.Split,
-						title: terminalStrings.split.value,
-						icon: Codicon.splitHorizontal
-					},
 					group: 'navigation',
 					order: 0,
 					when: ContextKeyExpr.and(
@@ -464,7 +459,7 @@ export function setupTerminalMenus(): void {
 					command: {
 						id: TerminalCommandId.Split,
 						title: terminalStrings.split,
-						icon: Codicon.splitHorizontal
+						icon: Codicon.splitVertical
 					},
 					group: 'navigation',
 					order: 2,
@@ -477,7 +472,7 @@ export function setupTerminalMenus(): void {
 					command: {
 						id: TerminalCommandId.SplitDown,
 						title: localize('workbench.action.terminal.splitDown', "Split Down"),
-						icon: Codicon.splitVertical
+						icon: Codicon.splitHorizontal
 					},
 					group: 'navigation',
 					order: 2.5,
@@ -508,7 +503,7 @@ export function setupTerminalMenus(): void {
 					alt: {
 						id: TerminalCommandId.Split,
 						title: terminalStrings.split.value,
-						icon: Codicon.splitHorizontal
+						icon: Codicon.splitVertical
 					},
 					group: 'navigation',
 					order: 0,
@@ -751,7 +746,7 @@ export function setupTerminalMenus(): void {
 			alt: {
 				id: TerminalCommandId.Split,
 				title: terminalStrings.split.value,
-				icon: Codicon.splitHorizontal
+				icon: Codicon.splitVertical
 			},
 			group: 'navigation',
 			order: 0,

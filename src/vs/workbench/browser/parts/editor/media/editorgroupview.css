@@ -30,13 +30,7 @@
 /* Watermark & shortcuts */
 
 .monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark  {
-	display: flex;
-	height: 100%;
-	max-width: 272px;
-	margin: auto;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
+	display: none;
 }
 
 .monaco-workbench .part.editor > .content .editor-group-container > .editor-group-watermark > .watermark-container {

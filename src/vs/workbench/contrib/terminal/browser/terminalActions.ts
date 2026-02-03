@@ -1070,7 +1070,7 @@ export function registerTerminalActions() {
 			},
 			when: TerminalContextKeys.focus
 		},
-		icon: Codicon.splitHorizontal,
+		icon: Codicon.splitVertical,
 		run: async (c, accessor, args) => {
 			const optionsOrProfile = isObject(args) ? args as ICreateTerminalOptions | ITerminalProfile : undefined;
 			const commandService = accessor.get(ICommandService);
@@ -1122,11 +1122,11 @@ export function registerTerminalActions() {
 		title: localize2('workbench.action.terminal.splitDown', 'Split Terminal Down'),
 		precondition: ContextKeyExpr.or(TerminalContextKeys.processSupported, TerminalContextKeys.webExtensionContributedProfile),
 		keybinding: {
-			primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.Backslash),
+			primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyD,
 			weight: KeybindingWeight.WorkbenchContrib,
 			when: TerminalContextKeys.focus
 		},
-		icon: Codicon.splitVertical,
+		icon: Codicon.splitHorizontal,
 		run: async (c, accessor, args) => {
 			const optionsOrProfile = isObject(args) ? args as ICreateTerminalOptions | ITerminalProfile : undefined;
 			const commandService = accessor.get(ICommandService);
@@ -1149,7 +1149,12 @@ export function registerTerminalActions() {
 		id: TerminalCommandId.SplitRight,
 		title: localize2('workbench.action.terminal.splitRight', 'Split Terminal Right'),
 		precondition: ContextKeyExpr.or(TerminalContextKeys.processSupported, TerminalContextKeys.webExtensionContributedProfile),
-		icon: Codicon.splitHorizontal,
+		keybinding: {
+			primary: KeyMod.CtrlCmd | KeyCode.KeyD,
+			weight: KeybindingWeight.WorkbenchContrib,
+			when: TerminalContextKeys.focus
+		},
+		icon: Codicon.splitVertical,
 		run: async (c, accessor, args) => {
 			const optionsOrProfile = isObject(args) ? args as ICreateTerminalOptions | ITerminalProfile : undefined;
 			const commandService = accessor.get(ICommandService);
@@ -1336,6 +1341,11 @@ export function registerTerminalActions() {
 		title: localize2('workbench.action.terminal.kill', 'Kill the Active Terminal Instance'),
 		precondition: ContextKeyExpr.or(sharedWhenClause.terminalAvailable, TerminalContextKeys.isOpen),
 		icon: killTerminalIcon,
+		keybinding: {
+			primary: KeyMod.CtrlCmd | KeyCode.KeyW,
+			weight: KeybindingWeight.WorkbenchContrib + 1,
+			when: ContextKeyExpr.and(TerminalContextKeys.focus, ContextKeyExpr.not('terminalEditorFocus'))
+		},
 		run: async (c) => killInstance(c, c.groupService.activeInstance)
 	});
 	registerTerminalAction({

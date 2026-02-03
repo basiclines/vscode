@@ -523,7 +523,7 @@ class TerminalTabsRenderer implements IListRenderer<ITerminalInstance, ITerminal
 	fillActionBar(instance: ITerminalInstance, template: ITerminalTabEntryTemplate): void {
 		// If the instance is within the selection, split all selected
 		const actions = [
-			template.elementDisposables.add(new Action(TerminalCommandId.SplitActiveTab, terminalStrings.split.short, ThemeIcon.asClassName(Codicon.splitHorizontal), true, async () => {
+			template.elementDisposables.add(new Action(TerminalCommandId.SplitActiveTab, terminalStrings.split.short, ThemeIcon.asClassName(Codicon.splitVertical), true, async () => {
 				this._runForSelectionOrInstance(instance, async e => {
 					this._terminalService.createTerminal({ location: { parentTerminal: e } });
 				});

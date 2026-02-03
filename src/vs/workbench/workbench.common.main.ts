@@ -434,4 +434,7 @@ import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
 // Opener
 import './contrib/opener/browser/opener.contribution.js';
 
+// Editor Auto Hide
+import './contrib/editorAutoHide/browser/editorAutoHide.contribution.js';
+
 //#endregion
