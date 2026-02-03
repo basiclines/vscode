@@ -457,32 +457,6 @@ export function setupTerminalMenus(): void {
 				id: MenuId.ViewTitle,
 				item: {
 					command: {
-						id: TerminalCommandId.Split,
-						title: terminalStrings.split,
-						icon: Codicon.splitVertical
-					},
-					group: 'navigation',
-					order: 2,
-					when: TerminalContextKeys.shouldShowViewInlineActions
-				}
-			},
-			{
-				id: MenuId.ViewTitle,
-				item: {
-					command: {
-						id: TerminalCommandId.SplitDown,
-						title: localize('workbench.action.terminal.splitDown', "Split Down"),
-						icon: Codicon.splitHorizontal
-					},
-					group: 'navigation',
-					order: 2.5,
-					when: TerminalContextKeys.shouldShowViewInlineActions
-				}
-			},
-			{
-				id: MenuId.ViewTitle,
-				item: {
-					command: {
 						id: TerminalCommandId.Kill,
 						title: terminalStrings.kill,
 						icon: Codicon.trash
@@ -499,11 +473,6 @@ export function setupTerminalMenus(): void {
 						id: TerminalCommandId.New,
 						title: terminalStrings.new,
 						icon: Codicon.plus
-					},
-					alt: {
-						id: TerminalCommandId.Split,
-						title: terminalStrings.split.value,
-						icon: Codicon.splitVertical
 					},
 					group: 'navigation',
 					order: 0,
@@ -742,11 +711,6 @@ export function setupTerminalMenus(): void {
 				id: TerminalCommandId.CreateTerminalEditorSameGroup,
 				title: terminalStrings.new,
 				icon: Codicon.plus
-			},
-			alt: {
-				id: TerminalCommandId.Split,
-				title: terminalStrings.split.value,
-				icon: Codicon.splitVertical
 			},
 			group: 'navigation',
 			order: 0,

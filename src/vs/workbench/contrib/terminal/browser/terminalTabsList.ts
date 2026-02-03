@@ -167,9 +167,27 @@ export class TerminalTabList extends WorkbenchList<ITerminalInstance> {
 				return;
 			}
 
-			if (this._getFocusMode() === 'doubleClick' && this.getFocus().length === 1) {
-				e.element.focus(true);
-			}
+			// Double-click to rename the terminal
+			const instance = e.element;
+			this._terminalEditingService.setEditingTerminal(instance);
+			this._terminalEditingService.setEditable(instance, {
+				validationMessage: value => {
+					if (!value || value.trim().length === 0) {
+						return {
+							content: localize('emptyTerminalNameInfo', "Providing no name will reset it to the default value"),
+							severity: Severity.Info
+						};
+					}
+					return null;
+				},
+				onFinish: async (value, success) => {
+					this._terminalEditingService.setEditable(instance, null);
+					this._terminalEditingService.setEditingTerminal(undefined);
+					if (success) {
+						await instance.rename(value);
+					}
+				}
+			});
 		}));
 
 		// on left click, if focus mode = single click, focus the element
@@ -521,14 +539,7 @@ class TerminalTabsRenderer implements IListRenderer<ITerminalInstance, ITerminal
 	}
 
 	fillActionBar(instance: ITerminalInstance, template: ITerminalTabEntryTemplate): void {
-		// If the instance is within the selection, split all selected
-		const actions = [
-			template.elementDisposables.add(new Action(TerminalCommandId.SplitActiveTab, terminalStrings.split.short, ThemeIcon.asClassName(Codicon.splitVertical), true, async () => {
-				this._runForSelectionOrInstance(instance, async e => {
-					this._terminalService.createTerminal({ location: { parentTerminal: e } });
-				});
-			})),
-		];
+		const actions: Action[] = [];
 		if (instance.shellLaunchConfig.tabActions) {
 			for (const action of instance.shellLaunchConfig.tabActions) {
 				actions.push(template.elementDisposables.add(new Action(action.id, action.label, action.icon ? ThemeIcon.asClassName(action.icon) : undefined, true, async () => {

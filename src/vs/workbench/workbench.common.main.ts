@@ -437,4 +437,7 @@ import './contrib/opener/browser/opener.contribution.js';
 // Editor Auto Hide
 import './contrib/editorAutoHide/browser/editorAutoHide.contribution.js';
 
+// CLI Tools Installer
+import './contrib/cliInstaller/browser/cliInstaller.contribution.js';
+
 //#endregion
