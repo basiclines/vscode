@@ -340,10 +340,19 @@ export class PaneCompositeBar extends Disposable {
 		for (const viewContainer of viewContainers) {
 			this.addComposite(viewContainer);
 
-			// Pin it by default if it is new
+			// Pin it by default if it is new (except for certain containers)
 			const cachedViewContainer = this.cachedViewContainers.filter(({ id }) => id === viewContainer.id)[0];
 			if (!cachedViewContainer) {
-				this.compositeBar.pin(viewContainer.id);
+				// Default debug and extensions to unpinned in activity bar
+				// Default chat to unpinned in auxiliary bar (keep terminal visible)
+				const defaultUnpinnedActivityBar = this.part === Parts.ACTIVITYBAR_PART &&
+					(viewContainer.id === 'workbench.view.debug' ||
+						viewContainer.id === 'workbench.view.extensions');
+				const defaultUnpinnedAuxiliaryBar = this.part === Parts.AUXILIARYBAR_PART &&
+					viewContainer.id === 'workbench.panel.chat';
+				if (!defaultUnpinnedActivityBar && !defaultUnpinnedAuxiliaryBar) {
+					this.compositeBar.pin(viewContainer.id);
+				}
 			}
 
 			// Active
@@ -564,12 +573,20 @@ export class PaneCompositeBar extends Disposable {
 						visible: compositeItem.visible,
 					});
 				} else {
+					// Default debug and extensions to unpinned in activity bar
+					// Default chat to unpinned in auxiliary bar (keep terminal visible)
+					const defaultUnpinnedActivityBar = this.part === Parts.ACTIVITYBAR_PART &&
+						(viewContainer.id === 'workbench.view.debug' ||
+							viewContainer.id === 'workbench.view.extensions');
+					const defaultUnpinnedAuxiliaryBar = this.part === Parts.AUXILIARYBAR_PART &&
+						viewContainer.id === 'workbench.panel.chat';
+					const defaultUnpinned = defaultUnpinnedActivityBar || defaultUnpinnedAuxiliaryBar;
 					newCompositeItems.push({
 						id: viewContainer.id,
 						name: typeof viewContainer.title === 'string' ? viewContainer.title : viewContainer.title.value,
 						order: viewContainer.order,
-						pinned: true,
-						visible: !this.shouldBeHidden(viewContainer),
+						pinned: !defaultUnpinned,
+						visible: !this.shouldBeHidden(viewContainer) && !defaultUnpinned,
 					});
 				}
 			}
@@ -695,7 +712,28 @@ export class PaneCompositeBar extends Disposable {
 	}
 
 	private getStoredPinnedViewContainersValue(): string {
-		return this.storageService.get(this.options.pinnedViewContainersKey, StorageScope.PROFILE, '[]');
+		const stored = this.storageService.get(this.options.pinnedViewContainersKey, StorageScope.PROFILE);
+		if (stored) {
+			return stored;
+		}
+		// Default: hide debug and extensions from activity bar
+		if (this.part === Parts.ACTIVITYBAR_PART) {
+			return JSON.stringify([
+				{ id: 'workbench.view.explorer', pinned: true, visible: true, order: 0 },
+				{ id: 'workbench.view.search', pinned: true, visible: true, order: 1 },
+				{ id: 'workbench.view.scm', pinned: true, visible: true, order: 2 },
+				{ id: 'workbench.view.debug', pinned: false, visible: false, order: 3 },
+				{ id: 'workbench.view.extensions', pinned: false, visible: false, order: 4 }
+			]);
+		}
+		// Default: hide chat from auxiliary bar (keep terminal visible)
+		if (this.part === Parts.AUXILIARYBAR_PART) {
+			return JSON.stringify([
+				{ id: 'terminal', pinned: true, visible: true, order: 0 },
+				{ id: 'workbench.panel.chat', pinned: false, visible: false, order: 1 }
+			]);
+		}
+		return '[]';
 	}
 
 	private setStoredPinnedViewContainersValue(value: string): void {

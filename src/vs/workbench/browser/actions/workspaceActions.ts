@@ -39,7 +39,7 @@ export class OpenFileAction extends Action2 {
 			keybinding: {
 				when: IsMacNativeContext.toNegated(),
 				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyO
+				primary: undefined
 			}
 		});
 	}
@@ -100,7 +100,7 @@ export class OpenFolderViaWorkspaceAction extends Action2 {
 			precondition: ContextKeyExpr.and(OpenFolderWorkspaceSupportContext.toNegated(), WorkbenchStateContext.isEqualTo('workspace')),
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyO
+				primary: undefined
 			}
 		});
 	}
@@ -126,7 +126,7 @@ export class OpenFileFolderAction extends Action2 {
 			precondition: ContextKeyExpr.and(IsMacNativeContext, OpenFolderWorkspaceSupportContext),
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyO
+				primary: undefined
 			}
 		});
 	}

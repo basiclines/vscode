@@ -281,7 +281,7 @@ export class ShowAllCommandsAction extends Action2 {
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
 				when: undefined,
-				primary: !isFirefox ? (KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyP) : undefined,
+				primary: !isFirefox ? (KeyMod.CtrlCmd | KeyCode.KeyP) : undefined,
 				secondary: [KeyCode.F1]
 			},
 			f1: true

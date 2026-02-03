@@ -1,7 +1,7 @@
 {
   "name": "theme-github",
   "displayName": "GitHub Theme",
-  "description": "GitHub Dark Dimmed theme for VS Code",
+  "description": "GitHub themes for VS Code",
   "categories": [
     "Themes"
   ],
@@ -18,6 +18,54 @@
         "label": "GitHub Dark Dimmed",
         "uiTheme": "vs-dark",
         "path": "./themes/dark-dimmed.json"
+      },
+      {
+        "id": "GitHub Dark Default",
+        "label": "GitHub Dark Default",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark-default.json"
+      },
+      {
+        "id": "GitHub Dark",
+        "label": "GitHub Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark.json"
+      },
+      {
+        "id": "GitHub Dark High Contrast",
+        "label": "GitHub Dark High Contrast",
+        "uiTheme": "hc-black",
+        "path": "./themes/dark-high-contrast.json"
+      },
+      {
+        "id": "GitHub Dark Colorblind",
+        "label": "GitHub Dark Colorblind (Beta)",
+        "uiTheme": "vs-dark",
+        "path": "./themes/dark-colorblind.json"
+      },
+      {
+        "id": "GitHub Light Default",
+        "label": "GitHub Light Default",
+        "uiTheme": "vs",
+        "path": "./themes/light-default.json"
+      },
+      {
+        "id": "GitHub Light",
+        "label": "GitHub Light",
+        "uiTheme": "vs",
+        "path": "./themes/light.json"
+      },
+      {
+        "id": "GitHub Light High Contrast",
+        "label": "GitHub Light High Contrast",
+        "uiTheme": "hc-light",
+        "path": "./themes/light-high-contrast.json"
+      },
+      {
+        "id": "GitHub Light Colorblind",
+        "label": "GitHub Light Colorblind (Beta)",
+        "uiTheme": "vs",
+        "path": "./themes/light-colorblind.json"
       }
     ]
   },

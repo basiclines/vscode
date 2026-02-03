@@ -19,9 +19,9 @@ import { Codicon } from '../../../base/common/codicons.js';
 //#region Quick access management commands and keys
 
 const globalQuickAccessKeybinding = {
-	primary: KeyMod.CtrlCmd | KeyCode.KeyP,
+	primary: KeyMod.CtrlCmd | KeyCode.KeyO,
 	secondary: [KeyMod.CtrlCmd | KeyCode.KeyE],
-	mac: { primary: KeyMod.CtrlCmd | KeyCode.KeyP, secondary: undefined }
+	mac: { primary: KeyMod.CtrlCmd | KeyCode.KeyO, secondary: undefined }
 };
 
 KeybindingsRegistry.registerCommandAndKeybindingRule({
