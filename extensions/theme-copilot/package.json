@@ -1,0 +1,23 @@
+{
+	"name": "theme-copilot",
+	"displayName": "Copilot Theme",
+	"description": "Dark theme with GitHub Copilot purple accent (#8534F3)",
+	"version": "1.0.0",
+	"publisher": "vscode",
+	"license": "MIT",
+	"engines": {
+		"vscode": "*"
+	},
+	"categories": [
+		"Themes"
+	],
+	"contributes": {
+		"themes": [
+			{
+				"label": "Copilot Dark",
+				"uiTheme": "vs-dark",
+				"path": "./themes/copilot-dark.json"
+			}
+		]
+	}
+}
