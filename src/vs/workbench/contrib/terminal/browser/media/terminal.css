@@ -138,6 +138,12 @@
 .xterm.xterm-cursor-pointer .xterm-screen { cursor: pointer; }
 .xterm.column-select.focus .xterm-screen  { cursor: crosshair; }
 
+/* Dim unfocused terminals for better visual focus */
+.monaco-workbench .pane-body.integrated-terminal .xterm:not(.focus),
+.monaco-workbench .terminal-editor .xterm:not(.focus) {
+	opacity: 0.6;
+}
+
 .monaco-workbench .terminal-editor .xterm a:not(.xterm-invalid-link),
 .monaco-workbench .pane-body.integrated-terminal .xterm a:not(.xterm-invalid-link) {
 	/* To support message box sizing */
