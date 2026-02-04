@@ -41,6 +41,18 @@ const enum ShutdownConstants {
 	MaximumShutdownTime = 5000
 }
 
+/**
+ * Writing large amounts of data can be corrupted for some reason, after looking into this it
+ * appears to be a race condition around writing to the FD which may be based on how powerful the
+ * hardware is. The workaround for this is to space out when large amounts of data is being written
+ * to the terminal. This also improves perceived responsiveness when pasting large text.
+ * See https://github.com/microsoft/vscode/issues/38137
+ */
+const enum WriteConstants {
+	MaxChunkSize = 50,
+	IntervalMs = 5
+}
+
 const enum Constants {
 	/**
 	 * The minimum duration between kill and spawn calls on Windows/conpty as a mitigation for a
@@ -109,6 +121,8 @@ export class TerminalProcess extends Disposable implements ITerminalChildProcess
 
 	private _isPtyPaused: boolean = false;
 	private _unacknowledgedCharCount: number = 0;
+	private _writeQueue: string[] = [];
+	private _writeTimeout: Timeout | undefined;
 	get exitMessage(): string | undefined { return this._exitMessage; }
 
 	get currentTitle(): string { return this._windowsShellHelper?.shellTitle || this._currentTitle; }
@@ -461,11 +475,48 @@ export class TerminalProcess extends Disposable implements ITerminalChildProcess
 	input(data: string, isBinary: boolean = false): void {
 		this._logService.trace('node-pty.IPty#write', data, isBinary);
 		if (isBinary) {
+			// Binary data is written directly without chunking
 			this._ptyProcess!.write(Buffer.from(data, 'binary'));
 		} else {
-			this._ptyProcess!.write(data);
+			// Chunk text input to improve responsiveness and avoid corruption
+			// See https://github.com/microsoft/vscode/issues/38137
+			for (let i = 0; i <= Math.floor(data.length / WriteConstants.MaxChunkSize); i++) {
+				const chunk = data.substr(i * WriteConstants.MaxChunkSize, WriteConstants.MaxChunkSize);
+				if (chunk) {
+					this._writeQueue.push(chunk);
+				}
+			}
+			this._startWrite();
 		}
 		this._childProcessMonitor?.handleInput();
+	}
+
+	private _startWrite(): void {
+		// Don't write if it's already queued or there is nothing to write
+		if (this._writeTimeout !== undefined || this._writeQueue.length === 0) {
+			return;
+		}
+
+		this._doWrite();
+
+		// Don't queue more writes if the queue is empty
+		if (this._writeQueue.length === 0) {
+			this._writeTimeout = undefined;
+			return;
+		}
+
+		// Queue the next write
+		this._writeTimeout = setTimeout(() => {
+			this._writeTimeout = undefined;
+			this._startWrite();
+		}, WriteConstants.IntervalMs);
+	}
+
+	private _doWrite(): void {
+		const data = this._writeQueue.shift();
+		if (data && this._ptyProcess) {
+			this._ptyProcess.write(data);
+		}
 	}
 
 	sendSignal(signal: string): void {
