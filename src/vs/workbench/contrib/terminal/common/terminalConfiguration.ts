@@ -221,7 +221,7 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
 	[TerminalSettingId.MinimumContrastRatio]: {
 		markdownDescription: localize('terminal.integrated.minimumContrastRatio', "When set, the foreground color of each cell will change to try meet the contrast ratio specified. Note that this will not apply to `powerline` characters per #146406. Example values:\n\n- 1: Do nothing and use the standard theme colors.\n- 4.5: [WCAG AA compliance (minimum)](https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast-contrast.html) (default).\n- 7: [WCAG AAA compliance (enhanced)](https://www.w3.org/TR/UNDERSTANDING-WCAG20/visual-audio-contrast7.html).\n- 21: White on black or black on white."),
 		type: 'number',
-		default: 4.5,
+		default: 1,
 		tags: ['accessibility']
 	},
 	[TerminalSettingId.TabStopWidth]: {
@@ -233,7 +233,7 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
 	[TerminalSettingId.FastScrollSensitivity]: {
 		markdownDescription: localize('terminal.integrated.fastScrollSensitivity', "Scrolling speed multiplier when pressing `Alt`."),
 		type: 'number',
-		default: 5
+		default: 10
 	},
 	[TerminalSettingId.MouseWheelScrollSensitivity]: {
 		markdownDescription: localize('terminal.integrated.mouseWheelScrollSensitivity', "A multiplier to be used on the `deltaY` of mouse wheel scroll events."),
@@ -327,7 +327,7 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
 			localize('terminal.integrated.gpuAcceleration.on', "Enable GPU acceleration within the terminal."),
 			localize('terminal.integrated.gpuAcceleration.off', "Disable GPU acceleration within the terminal. The terminal will render much slower when GPU acceleration is off but it should reliably work on all systems."),
 		],
-		default: 'auto',
+		default: 'on',
 		description: localize('terminal.integrated.gpuAcceleration', "Controls whether the terminal will leverage the GPU to do its rendering.")
 	},
 	[TerminalSettingId.TerminalTitleSeparator]: {
