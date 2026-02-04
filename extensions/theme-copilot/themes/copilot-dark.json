@@ -178,11 +178,11 @@
     "symbolIcon.fieldForeground": "#e0823d",
     "symbolIcon.fileForeground": "#c69026",
     "symbolIcon.folderForeground": "#c69026",
-    "symbolIcon.functionForeground": "#6ba4c9",
+    "symbolIcon.functionForeground": "#a78fd6",
     "symbolIcon.interfaceForeground": "#e0823d",
     "symbolIcon.keyForeground": "#9475bd",
     "symbolIcon.keywordForeground": "#f47067",
-    "symbolIcon.methodForeground": "#6ba4c9",
+    "symbolIcon.methodForeground": "#a78fd6",
     "symbolIcon.moduleForeground": "#f47067",
     "symbolIcon.namespaceForeground": "#f47067",
     "symbolIcon.nullForeground": "#9475bd",
@@ -198,7 +198,7 @@
     "symbolIcon.textForeground": "#6cb6ff",
     "symbolIcon.typeParameterForeground": "#6cb6ff",
     "symbolIcon.unitForeground": "#9475bd",
-    "symbolIcon.variableForeground": "#a78fd6",
+    "symbolIcon.variableForeground": "#87b5d6",
     "symbolIcon.constantForeground": [
       "#b4f1b4",
       "#8ddb8c",
@@ -315,7 +315,7 @@
     {
       "scope": "entity.name.function",
       "settings": {
-        "foreground": "#87b5d6"
+        "foreground": "#a78fd6"
       }
     },
     {
@@ -376,13 +376,13 @@
     {
       "scope": "variable",
       "settings": {
-        "foreground": "#a78fd6"
+        "foreground": "#87b5d6"
       }
     },
     {
       "scope": "variable.other",
       "settings": {
-        "foreground": "#a78fd6"
+        "foreground": "#87b5d6"
       }
     },
     {
