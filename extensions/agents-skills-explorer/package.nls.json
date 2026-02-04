@@ -1,0 +1,11 @@
+{
+	"displayName": "Agents & Skills Explorer",
+	"description": "Browse agents, skills, and session files in your workspace",
+	"viewsContainers.agentsSkills.title": "Agents & Skills",
+	"views.agents.name": "Agents",
+	"views.skills.name": "Skills",
+	"views.sessions.name": "Sessions",
+	"commands.refreshAgents": "Refresh Agents",
+	"commands.refreshSkills": "Refresh Skills",
+	"commands.refreshSessions": "Refresh Sessions"
+}

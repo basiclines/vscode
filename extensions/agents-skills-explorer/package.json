@@ -1,0 +1,111 @@
+{
+	"name": "agents-skills-explorer",
+	"displayName": "%displayName%",
+	"description": "%description%",
+	"version": "1.0.0",
+	"publisher": "vscode",
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.70.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./out/extension.js",
+	"capabilities": {
+		"virtualWorkspaces": true,
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "agents-skills",
+					"title": "%viewsContainers.agentsSkills.title%",
+					"icon": "resources/icons/agents.svg"
+				}
+			]
+		},
+		"views": {
+			"agents-skills": [
+				{
+					"id": "agentsExplorer",
+					"name": "%views.agents.name%"
+				},
+				{
+					"id": "skillsExplorer",
+					"name": "%views.skills.name%"
+				},
+				{
+					"id": "sessionsExplorer",
+					"name": "%views.sessions.name%"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "agentsExplorer",
+				"contents": "No agents found.\nCreate agents in .agents/ or .github/agents/",
+				"when": "agentsSkills.agentsLoaded"
+			},
+			{
+				"view": "skillsExplorer",
+				"contents": "No skills found.\nCreate skills in .agents/skills/ or .github/skills/",
+				"when": "agentsSkills.skillsLoaded"
+			},
+			{
+				"view": "sessionsExplorer",
+				"contents": "No sessions found for this workspace.",
+				"when": "agentsSkills.sessionsLoaded"
+			}
+		],
+		"commands": [
+			{
+				"command": "agentsSkills.refreshAgents",
+				"title": "%commands.refreshAgents%",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "agentsSkills.refreshSkills",
+				"title": "%commands.refreshSkills%",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "agentsSkills.refreshSessions",
+				"title": "%commands.refreshSessions%",
+				"icon": "$(refresh)"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "agentsSkills.refreshAgents",
+					"when": "view == agentsExplorer",
+					"group": "navigation"
+				},
+				{
+					"command": "agentsSkills.refreshSkills",
+					"when": "view == skillsExplorer",
+					"group": "navigation"
+				},
+				{
+					"command": "agentsSkills.refreshSessions",
+					"when": "view == sessionsExplorer",
+					"group": "navigation"
+				}
+			]
+		}
+	},
+	"scripts": {
+		"compile": "gulp compile-extension:agents-skills-explorer",
+		"watch": "gulp watch-extension:agents-skills-explorer"
+	},
+	"devDependencies": {
+		"@types/node": "^25.2.0"
+	}
+}
