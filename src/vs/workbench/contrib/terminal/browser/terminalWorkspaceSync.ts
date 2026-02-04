@@ -11,6 +11,9 @@ import { IWorkspaceContextService } from '../../../../platform/workspace/common/
 import { IWorkspaceEditingService } from '../../../services/workspaces/common/workspaceEditing.js';
 import { IExplorerService } from '../../files/browser/files.js';
 
+/** Debounce delay for workspace sync to prevent race conditions when switching terminals quickly */
+const WORKSPACE_SYNC_DEBOUNCE_MS = 200;
+
 /**
  * Syncs the workspace to a single folder matching the terminal's current working directory
  * when a terminal gains focus. This enables a terminal-first workflow where
@@ -20,6 +23,9 @@ export class TerminalWorkspaceSyncContribution extends Disposable implements IWo
 
 	static readonly ID = 'terminal.workspaceSync';
 
+	private _syncDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+	private _pendingInstance: ITerminalInstance | undefined;
+
 	constructor(
 		@ITerminalService private readonly _terminalService: ITerminalService,
 		@IWorkspaceContextService private readonly _workspaceContextService: IWorkspaceContextService,
@@ -28,13 +34,31 @@ export class TerminalWorkspaceSyncContribution extends Disposable implements IWo
 	) {
 		super();
 
-		// Listen to terminal focus events
+		// Listen to terminal focus events with debouncing
 		this._register(this._terminalService.onDidFocusInstance(instance => {
-			this._syncWorkspaceToTerminal(instance);
+			this._debouncedSyncWorkspaceToTerminal(instance);
 		}));
 
 		// On startup, sync workspace to first terminal
 		this._initializeWorkspaceFromTerminals();
+	}
+
+	private _debouncedSyncWorkspaceToTerminal(instance: ITerminalInstance): void {
+		// Cancel any pending sync
+		if (this._syncDebounceTimer) {
+			clearTimeout(this._syncDebounceTimer);
+		}
+
+		// Store the instance to sync
+		this._pendingInstance = instance;
+
+		// Schedule the sync after debounce delay
+		this._syncDebounceTimer = setTimeout(() => {
+			if (this._pendingInstance) {
+				this._syncWorkspaceToTerminal(this._pendingInstance);
+				this._pendingInstance = undefined;
+			}
+		}, WORKSPACE_SYNC_DEBOUNCE_MS);
 	}
 
 	private async _initializeWorkspaceFromTerminals(): Promise<void> {
@@ -84,6 +108,13 @@ export class TerminalWorkspaceSyncContribution extends Disposable implements IWo
 		} catch {
 			// Silently ignore errors
 		}
+	}
+
+	override dispose(): void {
+		if (this._syncDebounceTimer) {
+			clearTimeout(this._syncDebounceTimer);
+		}
+		super.dispose();
 	}
 }
 

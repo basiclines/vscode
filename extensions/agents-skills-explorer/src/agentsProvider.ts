@@ -41,8 +41,16 @@ export class AgentsProvider implements vscode.TreeDataProvider<FileItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<FileItem | undefined | void>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+	private _debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
 	refresh(): void {
-		this._onDidChangeTreeData.fire();
+		// Debounce rapid refreshes
+		if (this._debounceTimer) {
+			clearTimeout(this._debounceTimer);
+		}
+		this._debounceTimer = setTimeout(() => {
+			this._onDidChangeTreeData.fire();
+		}, 150);
 	}
 
 	getTreeItem(element: FileItem): vscode.TreeItem {

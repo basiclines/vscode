@@ -21,12 +21,12 @@ class FileItem extends vscode.TreeItem {
 	constructor(public readonly uri: vscode.Uri) {
 		const filename = path.basename(uri.fsPath);
 		const parentDir = path.basename(path.dirname(uri.fsPath));
-		
+
 		// For SKILL.md files, show the parent folder name (skill name)
 		const displayName = filename.toUpperCase().startsWith('SKILL.')
 			? parentDir
 			: filename;
-		
+
 		super(displayName, vscode.TreeItemCollapsibleState.None);
 
 		this.tooltip = uri.fsPath;
@@ -51,8 +51,16 @@ export class SkillsProvider implements vscode.TreeDataProvider<FileItem> {
 	private _onDidChangeTreeData = new vscode.EventEmitter<FileItem | undefined | void>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
+	private _debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
 	refresh(): void {
-		this._onDidChangeTreeData.fire();
+		// Debounce rapid refreshes
+		if (this._debounceTimer) {
+			clearTimeout(this._debounceTimer);
+		}
+		this._debounceTimer = setTimeout(() => {
+			this._onDidChangeTreeData.fire();
+		}, 150);
 	}
 
 	getTreeItem(element: FileItem): vscode.TreeItem {
