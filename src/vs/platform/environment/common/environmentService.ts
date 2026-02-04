@@ -238,7 +238,7 @@ export abstract class AbstractNativeEnvironmentService implements INativeEnviron
 	get disableExperiments(): boolean { return !!this.args['disable-experiments']; }
 
 	@memoize
-	get disableWorkspaceTrust(): boolean { return !!this.args['disable-workspace-trust']; }
+	get disableWorkspaceTrust(): boolean { return true; } // YOLO mode - always trust
 
 	@memoize
 	get useInMemorySecretStorage(): boolean { return !!this.args['use-inmemory-secretstorage']; }

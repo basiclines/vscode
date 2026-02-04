@@ -5,22 +5,16 @@
 
 import { isKeyboardEvent, isMouseEvent, isPointerEvent, getActiveWindow } from '../../../../base/browser/dom.js';
 import { Action } from '../../../../base/common/actions.js';
-import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Iterable } from '../../../../base/common/iterator.js';
 import { KeyChord, KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { Schemas } from '../../../../base/common/network.js';
-import { isAbsolute } from '../../../../base/common/path.js';
 import { isWindows } from '../../../../base/common/platform.js';
-import { dirname } from '../../../../base/common/resources.js';
 import { hasKey, isObject, isString } from '../../../../base/common/types.js';
 import { URI } from '../../../../base/common/uri.js';
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
-import { ILanguageService } from '../../../../editor/common/languages/language.js';
 import { EndOfLinePreference } from '../../../../editor/common/model.js';
-import { getIconClasses } from '../../../../editor/common/services/getIconClasses.js';
-import { IModelService } from '../../../../editor/common/services/model.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { AccessibleViewProviderId } from '../../../../platform/accessibility/browser/accessibleView.js';
 import { CONTEXT_ACCESSIBILITY_MODE_ENABLED } from '../../../../platform/accessibility/common/accessibility.js';
@@ -28,7 +22,6 @@ import { Action2, IAction2Options, MenuId, registerAction2 } from '../../../../p
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
-import { FileKind } from '../../../../platform/files/common/files.js';
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { ILabelService } from '../../../../platform/label/common/label.js';
@@ -43,8 +36,6 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IWorkspaceContextService, IWorkspaceFolder } from '../../../../platform/workspace/common/workspace.js';
 import { PICK_WORKSPACE_FOLDER_COMMAND_ID } from '../../../browser/actions/workspaceCommands.js';
 import { CLOSE_EDITOR_COMMAND_ID } from '../../../browser/parts/editor/editorCommands.js';
-import { IConfigurationResolverService } from '../../../services/configurationResolver/common/configurationResolver.js';
-import { ConfigurationResolverExpression } from '../../../services/configurationResolver/common/configurationResolverExpression.js';
 import { editorGroupToColumn } from '../../../services/editor/common/editorGroupColumn.js';
 import { IEditorGroupsService } from '../../../services/editor/common/editorGroupsService.js';
 import { ACTIVE_GROUP, AUX_WINDOW_GROUP, SIDE_GROUP } from '../../../services/editor/common/editorService.js';
@@ -1285,10 +1276,8 @@ export function registerTerminalActions() {
 		},
 		run: async (c, accessor, args) => {
 			let eventOrOptions = isObject(args) ? args as MouseEvent | ICreateTerminalOptions : undefined;
-			const workspaceContextService = accessor.get(IWorkspaceContextService);
 			const commandService = accessor.get(ICommandService);
 			const editorGroupsService = accessor.get(IEditorGroupsService);
-			const folders = workspaceContextService.getWorkspace().folders;
 			if (eventOrOptions && isMouseEvent(eventOrOptions) && (eventOrOptions.altKey || eventOrOptions.ctrlKey)) {
 				await c.service.createTerminal({ location: { splitActiveTerminal: true } });
 				return;
@@ -1301,20 +1290,9 @@ export function registerTerminalActions() {
 					eventOrOptions.location = { viewColumn: editorGroupToColumn(editorGroupsService, editorGroupsService.activeGroup) };
 				}
 
-				let instance: ITerminalInstance | undefined;
-				if (folders.length <= 1) {
-					// Allow terminal service to handle the path when there is only a
-					// single root
-					instance = await c.service.createTerminal(eventOrOptions);
-				} else {
-					const cwd = (await pickTerminalCwd(accessor))?.cwd;
-					if (!cwd) {
-						// Don't create the instance if the workspace picker was canceled
-						return;
-					}
-					eventOrOptions.cwd = cwd;
-					instance = await c.service.createTerminal(eventOrOptions);
-				}
+				// Always create terminal without prompting for workspace folder
+				// The terminal workspace sync feature will handle folder management on focus
+				const instance = await c.service.createTerminal(eventOrOptions);
 				c.service.setActiveInstance(instance);
 				await focusActiveTerminal(instance, c);
 			} else {
@@ -1712,64 +1690,6 @@ export function refreshTerminalActions(detectedProfiles: ITerminalProfile[]): ID
 
 function getResourceOrActiveInstance(c: ITerminalServicesCollection, resource: unknown): ITerminalInstance | undefined {
 	return c.service.getInstanceFromResource(toOptionalUri(resource)) || c.service.activeInstance;
-}
-
-async function pickTerminalCwd(accessor: ServicesAccessor, cancel?: CancellationToken): Promise<WorkspaceFolderCwdPair | undefined> {
-	const quickInputService = accessor.get(IQuickInputService);
-	const labelService = accessor.get(ILabelService);
-	const contextService = accessor.get(IWorkspaceContextService);
-	const modelService = accessor.get(IModelService);
-	const languageService = accessor.get(ILanguageService);
-	const configurationService = accessor.get(IConfigurationService);
-	const configurationResolverService = accessor.get(IConfigurationResolverService);
-
-	const folders = contextService.getWorkspace().folders;
-	if (!folders.length) {
-		return;
-	}
-
-	const folderCwdPairs = await Promise.all(folders.map(e => resolveWorkspaceFolderCwd(e, configurationService, configurationResolverService)));
-	const shrinkedPairs = shrinkWorkspaceFolderCwdPairs(folderCwdPairs);
-
-	if (shrinkedPairs.length === 1) {
-		return shrinkedPairs[0];
-	}
-
-	type Item = IQuickPickItem & { pair: WorkspaceFolderCwdPair };
-	const folderPicks: Item[] = shrinkedPairs.map(pair => {
-		const label = pair.folder.name;
-		const description = pair.isOverridden
-			? localize('workbench.action.terminal.overriddenCwdDescription', "(Overriden) {0}", labelService.getUriLabel(pair.cwd, { relative: !pair.isAbsolute }))
-			: labelService.getUriLabel(dirname(pair.cwd), { relative: true });
-
-		return {
-			label,
-			description: description !== label ? description : undefined,
-			pair: pair,
-			iconClasses: getIconClasses(modelService, languageService, pair.cwd, FileKind.ROOT_FOLDER)
-		};
-	});
-	const options: IPickOptions<Item> = {
-		placeHolder: localize('workbench.action.terminal.newWorkspacePlaceholder', "Select current working directory for new terminal"),
-		matchOnDescription: true,
-		canPickMany: false,
-	};
-
-	const token: CancellationToken = cancel || CancellationToken.None;
-	const pick = await quickInputService.pick<Item>(folderPicks, options, token);
-	return pick?.pair;
-}
-
-async function resolveWorkspaceFolderCwd(folder: IWorkspaceFolder, configurationService: IConfigurationService, configurationResolverService: IConfigurationResolverService): Promise<WorkspaceFolderCwdPair> {
-	const cwdConfig = configurationService.getValue(TerminalSettingId.Cwd, { resource: folder.uri });
-	if (!isString(cwdConfig) || cwdConfig.length === 0) {
-		return { folder, cwd: folder.uri, isAbsolute: false, isOverridden: false };
-	}
-
-	const resolvedCwdConfig = await configurationResolverService.resolveAsync(folder, cwdConfig);
-	return isAbsolute(resolvedCwdConfig) || resolvedCwdConfig.startsWith(ConfigurationResolverExpression.VARIABLE_LHS)
-		? { folder, isAbsolute: true, isOverridden: true, cwd: URI.from({ ...folder.uri, path: resolvedCwdConfig }) }
-		: { folder, isAbsolute: false, isOverridden: true, cwd: URI.joinPath(folder.uri, resolvedCwdConfig) };
 }
 
 /**
