@@ -84,6 +84,9 @@ export function activate(context: vscode.ExtensionContext) {
 			sessionsProvider.refresh();
 		})
 	);
+
+	// Initial refresh for sessions (workspace may already be set)
+	sessionsProvider.refresh();
 }
 
 export function deactivate() {
