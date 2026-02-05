@@ -3,6 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+/* Border below composite title bar - matches editor tabs border style */
+.monaco-workbench .pane-composite-part > .composite.title.has-composite-bar.has-actions {
+	position: relative;
+}
+
+.monaco-workbench .pane-composite-part > .composite.title.has-composite-bar.has-actions::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	z-index: 9;
+	pointer-events: none;
+	background-color: var(--vscode-editorGroupHeader-tabsBorder);
+	width: 100%;
+	height: 1px;
+}
+
 .monaco-workbench .pane-composite-part > .title.has-composite-bar > .title-actions .monaco-action-bar .actions-container {
 	justify-content: flex-end;
 }

@@ -322,18 +322,6 @@
 .monaco-workbench .pane-body.integrated-terminal .tabs-container > .monaco-toolbar {
 	padding: 4px 0 2px;
 	margin: auto;
-	position: relative;
-}
-
-/* Border below terminal toolbar - matches editor tabs border style */
-.monaco-workbench .pane-body.integrated-terminal .tabs-container > .monaco-toolbar::after {
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: 1px;
-	background-color: var(--vscode-editorGroupHeader-tabsBorder, var(--vscode-terminal-border));
 }
 .monaco-workbench .pane-body.integrated-terminal .terminal-tabs-entry.is-active::before {
 	display: block;
