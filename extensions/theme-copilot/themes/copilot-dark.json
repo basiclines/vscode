@@ -211,6 +211,7 @@
       "#1b4721",
       "#113417"
     ],
+    "terminal.background": "#24232e",
     "terminal.foreground": "#adbac7",
     "terminal.ansiBlack": "#545d68",
     "terminal.ansiRed": "#f47067",
