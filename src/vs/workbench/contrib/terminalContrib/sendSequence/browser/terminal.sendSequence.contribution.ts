@@ -244,7 +244,8 @@ registerSendSequenceKeybinding('\u001e', {
 	mac: { primary: KeyMod.WinCtrl | KeyMod.Shift | KeyCode.Digit6 }
 });
 // Shift+Enter: insert newline without executing (like Ghostty)
-registerSendSequenceKeybinding('\n', {
+// Send ESC+CR which readline interprets as "insert literal newline"
+registerSendSequenceKeybinding('\x1b\r', {
 	when: TerminalContextKeys.focus,
 	primary: KeyMod.Shift | KeyCode.Enter
 });
