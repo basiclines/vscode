@@ -322,6 +322,7 @@
 .monaco-workbench .pane-body.integrated-terminal .tabs-container > .monaco-toolbar {
 	padding: 4px 0 2px;
 	margin: auto;
+	border-bottom: 1px solid var(--vscode-terminal-border);
 }
 .monaco-workbench .pane-body.integrated-terminal .terminal-tabs-entry.is-active::before {
 	display: block;
