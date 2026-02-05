@@ -243,3 +243,8 @@ registerSendSequenceKeybinding('\u001e', {
 	primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit6,
 	mac: { primary: KeyMod.WinCtrl | KeyMod.Shift | KeyCode.Digit6 }
 });
+// Shift+Enter: insert newline without executing (like Ghostty)
+registerSendSequenceKeybinding('\n', {
+	when: TerminalContextKeys.focus,
+	primary: KeyMod.Shift | KeyCode.Enter
+});
