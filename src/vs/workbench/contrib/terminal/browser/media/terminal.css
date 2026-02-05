@@ -620,29 +620,80 @@
 
 /* ==================== HORIZONTAL TERMINAL TABS ==================== */
 
+/* Hide the "TERMINAL" title in pane header when horizontal tabs are used */
+.monaco-workbench .pane-body.integrated-terminal .terminal-horizontal-tabs-wrapper ~ .pane-header h3.title,
+.monaco-workbench .pane[id="workbench.panel.terminal"] > .pane-header h3.title,
+.monaco-workbench .split-view-view > .pane[id="workbench.panel.terminal"] > .pane-header h3.title {
+	display: none;
+}
+
+/* Alternative: target the terminal view pane directly */
+.monaco-workbench [id="workbench.view.terminal"] > .pane-header h3.title {
+	display: none;
+}
+
+/* Allow overflow visible on parent containers so tabs can appear above */
+.monaco-workbench .pane-body.integrated-terminal,
+.monaco-workbench .pane-body.integrated-terminal > .terminal-outer-container,
+.monaco-workbench .pane-body.integrated-terminal > .terminal-outer-container > .terminal-tab-list-container,
+.monaco-workbench .pane-body.integrated-terminal .terminal-horizontal-tabs-wrapper,
+.monaco-workbench .pane-body.integrated-terminal .monaco-scrollable-element,
+.monaco-workbench .pane-body.integrated-terminal .split-view-container {
+	overflow: visible !important;
+}
+
+/* Override split-view overflow hidden for terminal panel */
+.monaco-workbench .monaco-split-view2 > .monaco-scrollable-element,
+.monaco-workbench .monaco-split-view2 > .monaco-scrollable-element > .split-view-container {
+	overflow: visible !important;
+}
+
+/* Override .monaco-pane-view .pane overflow hidden rule for terminal */
+.monaco-workbench .monaco-pane-view .pane:has(.integrated-terminal),
+.monaco-workbench .monaco-pane-view .pane.expanded.vertical.merged-header:has(.integrated-terminal) {
+	overflow: visible !important;
+}
+
+/* The pane body needs higher z-index to overlay the header */
+.monaco-workbench .pane-body.integrated-terminal {
+	z-index: 10;
+	position: relative;
+}
+
 .monaco-workbench .terminal-horizontal-tabs-wrapper {
 	display: flex;
 	flex-direction: column;
 	width: 100%;
-	height: 100%;
+	height: calc(100% + 35px); /* Extend into header area */
 	position: absolute;
-	top: 0;
+	top: -35px; /* Move up into header */
 	left: 0;
 	right: 0;
 	bottom: 0;
-	overflow: hidden;
+	overflow: visible;
+	z-index: 15;
+	pointer-events: none; /* Allow clicks through to header actions */
 }
 
 .monaco-workbench .terminal-horizontal-tabs-container {
 	flex-shrink: 0;
 	height: 35px;
 	min-height: 35px;
-	background-color: var(--vscode-editorGroupHeader-tabsBackground);
-	border-bottom: 1px solid var(--vscode-editorGroupHeader-tabsBorder);
+	background-color: transparent; /* Let header bg show through */
+	border-bottom: none;
+	position: relative;
+	z-index: 20;
+	pointer-events: none; /* Disable on container */
+}
+
+/* Re-enable pointer events on terminal content area */
+.monaco-workbench .terminal-horizontal-tabs-wrapper .terminal-outer-container {
+	pointer-events: auto;
 }
 
 .monaco-workbench .terminal-horizontal-tabs-container > .scrollable-element {
 	height: 100%;
+	pointer-events: none;
 }
 
 .monaco-workbench .terminal-horizontal-tabs {
@@ -652,6 +703,7 @@
 	height: 35px;
 	padding: 0;
 	gap: 0;
+	pointer-events: none;
 }
 
 .monaco-workbench .terminal-horizontal-tabs .terminal-tab {
@@ -664,9 +716,11 @@
 	background-color: var(--vscode-tab-inactiveBackground);
 	color: var(--vscode-tab-inactiveForeground);
 	border-right: 1px solid var(--vscode-tab-border);
+	border-bottom: 1px solid var(--vscode-tab-border);
 	position: relative;
 	flex-shrink: 0;
 	user-select: none;
+	pointer-events: auto; /* Enable clicks on individual tabs */
 }
 
 .monaco-workbench .terminal-horizontal-tabs .terminal-tab:hover {
@@ -676,6 +730,7 @@
 .monaco-workbench .terminal-horizontal-tabs .terminal-tab.active {
 	background-color: var(--vscode-tab-activeBackground);
 	color: var(--vscode-tab-activeForeground);
+	border-bottom: 1px solid transparent; /* Remove bottom border for active tab */
 }
 
 .monaco-workbench .terminal-horizontal-tabs .terminal-tab.active::after {
