@@ -396,7 +396,7 @@ const terminalConfiguration: IStringDictionary<IConfigurationPropertySchema> = {
 			localize('terminal.integrated.confirmOnKill.panel', "Confirm if the terminal is in the panel."),
 			localize('terminal.integrated.confirmOnKill.always', "Confirm if the terminal is either in the editor or panel."),
 		],
-		default: 'editor'
+		default: 'always'
 	},
 	[TerminalSettingId.EnableBell]: {
 		markdownDeprecationMessage: localize('terminal.integrated.enableBell', "This is now deprecated. Instead use the `terminal.integrated.enableVisualBell` and `accessibility.signals.terminalBell` settings."),
